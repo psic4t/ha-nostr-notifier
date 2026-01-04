@@ -134,20 +134,21 @@ class HaNostrNotifierOptionsFlow(config_entries.OptionsFlow):
                     recipients_hex = []
 
                 if not errors:
-                    # Update options - preserve original slug and private key
-                    data = dict(self.config_entry.data)
-                    data[CONF_TOPIC_NAME] = topic_name
-                    data[CONF_RECIPIENTS] = recipients_hex
+                    options = dict(self.config_entry.options)
+                    options[CONF_TOPIC_NAME] = topic_name
+                    options[CONF_RECIPIENTS] = recipients_hex
 
-                    self.hass.config_entries.async_update_entry(
-                        self.config_entry, data=data
-                    )
-
-                    return self.async_create_entry(title="", data=None)
+                    return self.async_create_entry(title="", data=options)
 
         # Pre-fill with current values
-        current_topic_name = self.config_entry.data.get(CONF_TOPIC_NAME, "")
-        current_recipients_hex = self.config_entry.data.get(CONF_RECIPIENTS, [])
+        current_topic_name = self.config_entry.options.get(
+            CONF_TOPIC_NAME,
+            self.config_entry.data.get(CONF_TOPIC_NAME, ""),
+        )
+        current_recipients_hex = self.config_entry.options.get(
+            CONF_RECIPIENTS,
+            self.config_entry.data.get(CONF_RECIPIENTS, []),
+        )
 
         # The config entry stores recipients as hex pubkeys, but the UI expects
         # `npub...` values.

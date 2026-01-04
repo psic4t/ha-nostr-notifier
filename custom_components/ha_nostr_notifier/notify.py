@@ -33,9 +33,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up Nostr notifier notify platform."""
     topic_slug = entry.data.get(CONF_TOPIC_SLUG, "nostr")
-    topic_name = entry.data.get(CONF_TOPIC_NAME, "Nostr Topic")
+    topic_name = entry.options.get(
+        CONF_TOPIC_NAME,
+        entry.data.get(CONF_TOPIC_NAME, "Nostr Topic"),
+    )
     private_key = entry.data.get(CONF_PRIVATE_KEY, "")
-    recipients = entry.data.get(CONF_RECIPIENTS, [])
+    recipients = entry.options.get(
+        CONF_RECIPIENTS,
+        entry.data.get(CONF_RECIPIENTS, []),
+    )
 
     _LOGGER.debug(
         "Setting up notify entity for topic %s (slug: %s) with %d recipients",

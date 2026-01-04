@@ -50,14 +50,8 @@ async def async_update_listener(
     """Handle config entry updates."""
     _LOGGER.info("Updating Nostr notifier entry: %s", entry.title)
 
-    private_key = entry.data.get("private_key")
-    client = NostrClient(private_key)
-    hass.data[DOMAIN][entry.entry_id]["client"] = client
-
-    # Publish metadata after entry update
-    asyncio.create_task(
-        _publish_topic_metadata(hass, entry, client),
-    )
+    # Reload so notify entity sees updated options.
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -76,10 +70,10 @@ async def _publish_topic_metadata(
     client: NostrClient,
 ) -> None:
     """Publish topic metadata (kind 0) to bootstrap and recipient relays."""
-    topic_name = entry.data.get("topic_name", "Unknown")
+    topic_name = entry.options.get("topic_name", entry.data.get("topic_name", "Unknown"))
 
     relays = list(DEFAULT_BOOTSTRAP_RELAYS)
-    recipients_hex = entry.data.get("recipients", [])
+    recipients_hex = entry.options.get("recipients", entry.data.get("recipients", []))
 
     for recipient_hex in recipients_hex:
         recipient_relays = await client.discover_recipient_relays(recipient_hex)
