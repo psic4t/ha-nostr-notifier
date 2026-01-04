@@ -40,7 +40,7 @@ def get_existing_slugs(hass: HomeAssistant) -> list[str]:
     return slugs
 
 
-class HaNostrNotifierConfigFlow(config_entries.ConfigFlow):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Nostr notifier."""
 
     VERSION = 1
