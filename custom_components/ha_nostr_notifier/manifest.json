@@ -7,6 +7,6 @@
   "documentation": "https://github.com/psic4t/ha-nostr-notifier",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "requirements": ["nostr-sdk>=0.42.0"],
+  "requirements": ["nostr-sdk>=0.44.0,<0.45"],
   "version": "0.1.0"
 }
