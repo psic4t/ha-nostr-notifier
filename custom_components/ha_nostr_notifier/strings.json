@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create a Nostr topic",
+        "description": "Create a new Nostr topic with its own keypair and recipient list.",
+        "data": {
+          "topic_name": "Topic name",
+          "recipients": "Recipients (npub, one per line)"
+        },
+        "data_description": {
+          "topic_name": "The topic name will be used as the Nostr profile name and the notify service identifier.",
+          "recipients": "Enter one npub per line. These are the recipients who will receive encrypted DMs from this topic."
+        }
+      }
+    },
+    "error": {
+      "invalid_npub": "Invalid npub format",
+      "invalid_topic_name": "Invalid topic name"
+    },
+    "abort": {
+      "already_configured": "Topic already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit topic settings",
+        "description": "Edit the topic name and recipient list.",
+        "data": {
+          "topic_name": "Topic name",
+          "recipients": "Recipients (npub, one per line)"
+        },
+        "data_description": {
+          "topic_name": "The topic name will be used as the Nostr profile name.",
+          "recipients": "Enter one npub per line. These are the recipients who will receive encrypted DMs from this topic."
+        }
+      }
+    },
+    "error": {
+      "invalid_npub": "Invalid npub format",
+      "invalid_topic_name": "Invalid topic name"
+    }
+  }
+}
