@@ -107,7 +107,9 @@ class HaNostrNotifierOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        # In recent Home Assistant versions `OptionsFlow.config_entry` is a read-only
+        # property backed by `_config_entry`.
+        self._config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -146,7 +148,22 @@ class HaNostrNotifierOptionsFlow(config_entries.OptionsFlow):
         # Pre-fill with current values
         current_topic_name = self.config_entry.data.get(CONF_TOPIC_NAME, "")
         current_recipients_hex = self.config_entry.data.get(CONF_RECIPIENTS, [])
-        current_recipients_text = "\n".join(current_recipients_hex)
+
+        # The config entry stores recipients as hex pubkeys, but the UI expects
+        # `npub...` values.
+        current_recipients: list[str] = []
+        try:
+            from nostr_sdk import PublicKey
+
+            for public_key_hex in current_recipients_hex:
+                try:
+                    current_recipients.append(PublicKey.parse(public_key_hex).to_bech32())
+                except Exception:
+                    current_recipients.append(public_key_hex)
+        except Exception:
+            current_recipients = list(current_recipients_hex)
+
+        current_recipients_text = "\n".join(current_recipients)
 
         return self.async_show_form(
             step_id="init",
