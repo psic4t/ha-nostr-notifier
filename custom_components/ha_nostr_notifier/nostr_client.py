@@ -108,11 +108,17 @@ class NostrClient:
             _LOGGER.warning("Failed to query kind 10050: %s", e)
             return []
 
-        if not events:
+        # Events object is not directly iterable in nostr-sdk 0.44.x
+        # Use .is_empty() and .first() or .to_vec() to access events
+        if events.is_empty():
             _LOGGER.info("No kind 10050 event found for recipient %s", recipient_pubkey_hex)
             return []
 
-        event = list(events)[0]
+        event = events.first()
+        if event is None:
+            _LOGGER.info("No kind 10050 event found for recipient %s", recipient_pubkey_hex)
+            return []
+
         relays = []
 
         try:
