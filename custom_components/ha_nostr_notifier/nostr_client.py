@@ -49,6 +49,8 @@ class NostrClient:
 
         try:
             await self._client.connect()
+            # Wait for connections to be established
+            await self._client.wait_for_connection(timedelta(seconds=DISCOVERY_TIMEOUT_SEC))
         except Exception as e:
             _LOGGER.warning("Failed to connect to bootstrap relays: %s", e)
 
@@ -67,6 +69,8 @@ class NostrClient:
 
         try:
             await client.connect()
+            # Wait for connections to be established before returning
+            await client.wait_for_connection(timedelta(seconds=DISCOVERY_TIMEOUT_SEC))
         except Exception as e:
             _LOGGER.warning("Failed to connect discovery client: %s", e)
             return None
