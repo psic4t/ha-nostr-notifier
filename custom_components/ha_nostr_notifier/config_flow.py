@@ -6,9 +6,12 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    OptionsFlowWithReload,
+)
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -40,7 +43,7 @@ def get_existing_slugs(hass: HomeAssistant) -> list[str]:
     return slugs
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class HaNostrNotifierConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Nostr notifier."""
 
     VERSION = 1
@@ -95,21 +98,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
+    @callback
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> config_entries.OptionsFlow:
+        config_entry: ConfigEntry,
+    ) -> OptionsFlowWithReload:
         """Get the options flow for this handler."""
-        return HaNostrNotifierOptionsFlow(config_entry)
+        return HaNostrNotifierOptionsFlow()
 
 
-class HaNostrNotifierOptionsFlow(config_entries.OptionsFlow):
+class HaNostrNotifierOptionsFlow(OptionsFlowWithReload):
     """Handle the options flow for editing topic."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        # In recent Home Assistant versions `OptionsFlow.config_entry` is a read-only
-        # property backed by `_config_entry`.
-        self._config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -134,6 +132,12 @@ class HaNostrNotifierOptionsFlow(config_entries.OptionsFlow):
                     recipients_hex = []
 
                 if not errors:
+                    # Update entry title if topic name changed
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        title=topic_name,
+                    )
+
                     options = dict(self.config_entry.options)
                     options[CONF_TOPIC_NAME] = topic_name
                     options[CONF_RECIPIENTS] = recipients_hex

@@ -32,8 +32,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     client = NostrClient(private_key)
     hass.data[DOMAIN][entry.entry_id] = {"entry": entry, "client": client}
 
-    entry.add_update_listener(async_update_listener)
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Publish metadata after entry setup
@@ -42,16 +40,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     return True
-
-
-async def async_update_listener(
-    hass: HomeAssistant, entry: ConfigEntry
-) -> None:
-    """Handle config entry updates."""
-    _LOGGER.info("Updating Nostr notifier entry: %s", entry.title)
-
-    # Reload so notify entity sees updated options.
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
