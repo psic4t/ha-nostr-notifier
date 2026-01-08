@@ -4,8 +4,8 @@ from __future__ import annotations
 import re
 from typing import Final
 
-# Based on bech32 encoding for npub
-NPUB_PATTERN: Final = re.compile(r"^npub1[02-9ac-hjkmnp-z]{56,}$")
+# Based on bech32 encoding for npub (bech32 alphabet excludes 1, b, i, o)
+NPUB_PATTERN: Final = re.compile(r"^npub1[02-9ac-hj-np-z]{58}$")
 SLUG_PATTERN: Final = re.compile(r"^[a-z0-9_\-]+$")
 
 
