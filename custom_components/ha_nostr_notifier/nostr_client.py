@@ -163,7 +163,7 @@ class NostrClient:
         from nostr_sdk import Metadata, RelayUrl
 
         try:
-            metadata = Metadata.new().name(topic_name).display_name(topic_name).picture(
+            metadata = Metadata().set_name(topic_name).set_display_name(topic_name).set_picture(
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/New_Home_Assistant_logo.svg/250px-New_Home_Assistant_logo.svg.png"
             )
             await self._ensure_connected()
