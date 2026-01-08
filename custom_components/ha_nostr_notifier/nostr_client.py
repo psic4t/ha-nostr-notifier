@@ -217,6 +217,16 @@ class NostrClient:
                 _LOGGER.warning("No valid relay URLs to send to")
                 return
 
+            # Add recipient's relays to the client and connect
+            for relay_url in relay_urls:
+                try:
+                    await self._client.add_relay(relay_url)
+                except Exception as e:
+                    _LOGGER.debug("Failed to add relay %s: %s", relay_url, e)
+
+            await self._client.connect()
+            await self._client.wait_for_connection(timedelta(seconds=timeout_sec))
+
             try:
                 await asyncio.wait_for(
                     self._client.send_private_msg_to(
