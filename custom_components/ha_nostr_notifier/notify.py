@@ -105,7 +105,7 @@ class NostrNotifyEntity(NotifyEntity):
 
         formatted_message = message
         if subject:
-            formatted_message = f"*{subject}*\n\n{message}"
+            formatted_message = f"**{subject}**\n\n{message}"
 
         _LOGGER.debug(
             "Sending Nostr notification to %d recipients",
