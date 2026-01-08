@@ -160,15 +160,17 @@ class NostrClient:
         timeout_sec: float = PUBLISH_TIMEOUT_SEC,
     ) -> None:
         """Publish kind 0 metadata event for topic."""
-        from nostr_sdk import Metadata, MetadataRecord, RelayUrl
+        import json
+
+        from nostr_sdk import Metadata, RelayUrl
 
         try:
-            metadata_record = MetadataRecord(
-                name=topic_name,
-                display_name=topic_name,
-                picture="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/New_Home_Assistant_logo.svg/250px-New_Home_Assistant_logo.svg.png",
-            )
-            metadata = Metadata.from_record(metadata_record)
+            metadata_json = json.dumps({
+                "name": topic_name,
+                "display_name": topic_name,
+                "picture": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/New_Home_Assistant_logo.svg/250px-New_Home_Assistant_logo.svg.png",
+            })
+            metadata = Metadata.from_json(metadata_json)
             await self._ensure_connected()
 
             for relay_url_str in target_relays:
