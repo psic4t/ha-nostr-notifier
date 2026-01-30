@@ -62,13 +62,15 @@ class HaNostrNotifierConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 # Validate recipients if provided
                 recipients_text = user_input[CONF_RECIPIENTS]
+                recipients_hex = []
                 if recipients_text:
                     recipients = parse_recipients(recipients_text)
-                    recipients_hex = [
-                        decode_npub_to_hex(npub) for npub in recipients
-                    ]
-                else:
-                    recipients_hex = []
+                    try:
+                        recipients_hex = [
+                            decode_npub_to_hex(npub) for npub in recipients
+                        ]
+                    except Exception:
+                        errors[CONF_RECIPIENTS] = "invalid_npub"
 
                 if not errors:
                     # Generate stable slug
@@ -123,13 +125,15 @@ class HaNostrNotifierOptionsFlow(OptionsFlowWithReload):
             else:
                 # Validate recipients if provided
                 recipients_text = user_input[CONF_RECIPIENTS]
+                recipients_hex = []
                 if recipients_text:
                     recipients = parse_recipients(recipients_text)
-                    recipients_hex = [
-                        decode_npub_to_hex(npub) for npub in recipients
-                    ]
-                else:
-                    recipients_hex = []
+                    try:
+                        recipients_hex = [
+                            decode_npub_to_hex(npub) for npub in recipients
+                        ]
+                    except Exception:
+                        errors[CONF_RECIPIENTS] = "invalid_npub"
 
                 if not errors:
                     # Update entry title if topic name changed

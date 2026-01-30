@@ -36,6 +36,13 @@ class NostrClient:
         self._relay_cache: dict[str, tuple[list[str], float]] = {}
         self._cache_ttl = 3600.0
 
+    async def close(self) -> None:
+        """Disconnect from all relays and cleanup resources."""
+        try:
+            await self._client.disconnect()
+        except Exception as e:
+            _LOGGER.debug("Error during client disconnect: %s", e)
+
     async def _ensure_connected(self) -> None:
         """Ensure client is connected to bootstrap relays."""
         from nostr_sdk import RelayUrl
@@ -232,7 +239,11 @@ class NostrClient:
                     _LOGGER.debug("Failed to add relay %s: %s", relay_url, e)
 
             await self._client.connect()
-            await self._client.wait_for_connection(timedelta(seconds=timeout_sec))
+            # Defensive timeout wrapper in case SDK timeout fails
+            await asyncio.wait_for(
+                self._client.wait_for_connection(timedelta(seconds=timeout_sec)),
+                timeout=timeout_sec + 1.0,  # Slightly longer to let SDK timeout trigger first
+            )
 
             try:
                 await asyncio.wait_for(

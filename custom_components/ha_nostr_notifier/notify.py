@@ -98,7 +98,6 @@ class NostrNotifyEntity(NotifyEntity):
 
     async def async_send_message(self, message: str, **kwargs: Any) -> None:
         """Send a notification message."""
-        client = NostrClient(self._private_key)
         subject = kwargs.get("data", {}).get("subject")
         if not subject:
             subject = kwargs.get("title")
@@ -115,7 +114,7 @@ class NostrNotifyEntity(NotifyEntity):
         tasks = []
         for recipient_hex in self._recipients:
             task = asyncio.create_task(
-                self._send_to_recipient(client, recipient_hex, formatted_message)
+                self._send_to_recipient(recipient_hex, formatted_message)
             )
             tasks.append(task)
 
@@ -123,9 +122,10 @@ class NostrNotifyEntity(NotifyEntity):
             await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _send_to_recipient(
-        self, client: NostrClient, recipient_hex: str, message: str
+        self, recipient_hex: str, message: str
     ) -> None:
-        """Send to a single recipient."""
+        """Send to a single recipient with isolated client."""
+        client = NostrClient(self._private_key)
         try:
             relays = await client.discover_recipient_relays(recipient_hex)
             if relays:
@@ -136,3 +136,5 @@ class NostrNotifyEntity(NotifyEntity):
                 recipient_hex,
                 e,
             )
+        finally:
+            await client.close()
