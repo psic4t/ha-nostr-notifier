@@ -76,10 +76,24 @@ class NostrClient:
 
         try:
             await client.connect()
-            # Wait for connections to be established before returning
-            await client.wait_for_connection(timedelta(seconds=DISCOVERY_TIMEOUT_SEC))
+            # Defensive timeout wrapper in case SDK timeout fails
+            await asyncio.wait_for(
+                client.wait_for_connection(timedelta(seconds=DISCOVERY_TIMEOUT_SEC)),
+                timeout=DISCOVERY_TIMEOUT_SEC + 1.0,
+            )
+        except asyncio.TimeoutError:
+            _LOGGER.warning("Timed out waiting for discovery relay connections")
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+            return None
         except Exception as e:
             _LOGGER.warning("Failed to connect discovery client: %s", e)
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
             return None
 
         return client
@@ -88,6 +102,7 @@ class NostrClient:
         """Discover recipient's messaging relays from kind 10050 with TTL cache."""
         from nostr_sdk import Filter, Kind, PublicKey
 
+        # Check cache first
         if recipient_pubkey_hex in self._relay_cache:
             relays, expiry = self._relay_cache[recipient_pubkey_hex]
             if time.time() < expiry:
@@ -97,26 +112,64 @@ class NostrClient:
                 )
                 return relays
 
-        client = await self._create_discovery_client()
-        if client is None:
-            _LOGGER.warning("Could not create discovery client")
-            return []
+        # Try discovery with retry
+        max_attempts = 2
+        retry_delay = 1.0
+        events = None
 
-        try:
-            pubkey = PublicKey.parse(recipient_pubkey_hex)
-            filter_obj = Filter().kind(Kind(KIND_INBOX_RELAYS)).author(
-                pubkey
-            ).limit(1)
-
-            events = await asyncio.wait_for(
-                client.fetch_events(filter_obj, timedelta(seconds=DISCOVERY_TIMEOUT_SEC)),
-                timeout=DISCOVERY_TIMEOUT_SEC,
+        for attempt in range(max_attempts):
+            _LOGGER.debug(
+                "Discovering relays for recipient %s (attempt %d/%d)",
+                recipient_pubkey_hex[:16],
+                attempt + 1,
+                max_attempts,
             )
-        except asyncio.TimeoutError:
-            _LOGGER.warning("Timed out querying kind 10050 for recipient %s", recipient_pubkey_hex)
-            return []
-        except Exception as e:
-            _LOGGER.warning("Failed to query kind 10050: %s", e)
+
+            client = await self._create_discovery_client()
+            if client is None:
+                if attempt < max_attempts - 1:
+                    _LOGGER.debug("Retrying discovery client creation after %.1fs...", retry_delay)
+                    await asyncio.sleep(retry_delay)
+                    continue
+                _LOGGER.warning("Could not create discovery client after %d attempts", max_attempts)
+                return []
+
+            try:
+                pubkey = PublicKey.parse(recipient_pubkey_hex)
+                filter_obj = Filter().kind(Kind(KIND_INBOX_RELAYS)).author(
+                    pubkey
+                ).limit(1)
+
+                events = await asyncio.wait_for(
+                    client.fetch_events(filter_obj, timedelta(seconds=DISCOVERY_TIMEOUT_SEC)),
+                    timeout=DISCOVERY_TIMEOUT_SEC,
+                )
+                # Success - break out of retry loop
+                break
+
+            except asyncio.TimeoutError:
+                _LOGGER.warning(
+                    "Timed out querying kind 10050 for recipient %s (attempt %d/%d)",
+                    recipient_pubkey_hex[:16],
+                    attempt + 1,
+                    max_attempts,
+                )
+                if attempt < max_attempts - 1:
+                    _LOGGER.debug("Retrying after %.1fs...", retry_delay)
+                    await asyncio.sleep(retry_delay)
+                    continue
+                return []
+            except Exception as e:
+                _LOGGER.warning("Failed to query kind 10050: %s", e)
+                return []
+            finally:
+                # Always disconnect the discovery client
+                try:
+                    await client.disconnect()
+                except Exception:
+                    pass
+
+        if events is None:
             return []
 
         # Events object is not directly iterable in nostr-sdk 0.44.x
