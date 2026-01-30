@@ -99,31 +99,28 @@ class NostrNotifyEntity(NotifyEntity):
     async def async_send_message(self, message: str, **kwargs: Any) -> None:
         """Send a notification message."""
         client = NostrClient(self._private_key)
-        try:
-            subject = kwargs.get("data", {}).get("subject")
-            if not subject:
-                subject = kwargs.get("title")
+        subject = kwargs.get("data", {}).get("subject")
+        if not subject:
+            subject = kwargs.get("title")
 
-            formatted_message = message
-            if subject:
-                formatted_message = f"**{subject}**\n\n{message}"
+        formatted_message = message
+        if subject:
+            formatted_message = f"**{subject}**\n\n{message}"
 
-            _LOGGER.debug(
-                "Sending Nostr notification to %d recipients",
-                len(self._recipients),
+        _LOGGER.debug(
+            "Sending Nostr notification to %d recipients",
+            len(self._recipients),
+        )
+
+        tasks = []
+        for recipient_hex in self._recipients:
+            task = asyncio.create_task(
+                self._send_to_recipient(client, recipient_hex, formatted_message)
             )
+            tasks.append(task)
 
-            tasks = []
-            for recipient_hex in self._recipients:
-                task = asyncio.create_task(
-                    self._send_to_recipient(client, recipient_hex, formatted_message)
-                )
-                tasks.append(task)
-
-            if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
-        finally:
-            await client.close()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _send_to_recipient(
         self, client: NostrClient, recipient_hex: str, message: str

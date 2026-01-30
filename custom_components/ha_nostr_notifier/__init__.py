@@ -1,6 +1,7 @@
 """Home Assistant Nostr notifier integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Final
 
@@ -33,10 +34,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Publish metadata after entry setup (fire-and-forget with HA lifecycle integration)
-    hass.async_create_background_task(
+    # Publish metadata after entry setup
+    asyncio.create_task(
         _publish_topic_metadata(hass, entry, client),
-        name=f"nostr_metadata_publish_{entry.entry_id}",
     )
 
     return True
