@@ -98,34 +98,37 @@ class NostrNotifyEntity(NotifyEntity):
 
     async def async_send_message(self, message: str, **kwargs: Any) -> None:
         """Send a notification message."""
-        subject = kwargs.get("data", {}).get("subject")
-        if not subject:
-            subject = kwargs.get("title")
+        client = NostrClient(self._private_key)
+        try:
+            subject = kwargs.get("data", {}).get("subject")
+            if not subject:
+                subject = kwargs.get("title")
 
-        formatted_message = message
-        if subject:
-            formatted_message = f"**{subject}**\n\n{message}"
+            formatted_message = message
+            if subject:
+                formatted_message = f"**{subject}**\n\n{message}"
 
-        _LOGGER.debug(
-            "Sending Nostr notification to %d recipients",
-            len(self._recipients),
-        )
-
-        tasks = []
-        for recipient_hex in self._recipients:
-            task = asyncio.create_task(
-                self._send_to_recipient(recipient_hex, formatted_message)
+            _LOGGER.debug(
+                "Sending Nostr notification to %d recipients",
+                len(self._recipients),
             )
-            tasks.append(task)
 
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            tasks = []
+            for recipient_hex in self._recipients:
+                task = asyncio.create_task(
+                    self._send_to_recipient(client, recipient_hex, formatted_message)
+                )
+                tasks.append(task)
+
+            if tasks:
+                await asyncio.gather(*tasks, return_exceptions=True)
+        finally:
+            await client.close()
 
     async def _send_to_recipient(
-        self, recipient_hex: str, message: str
+        self, client: NostrClient, recipient_hex: str, message: str
     ) -> None:
-        """Send to a single recipient with isolated client."""
-        client = NostrClient(self._private_key)
+        """Send to a single recipient."""
         try:
             relays = await client.discover_recipient_relays(recipient_hex)
             if relays:
@@ -136,5 +139,3 @@ class NostrNotifyEntity(NotifyEntity):
                 recipient_hex,
                 e,
             )
-        finally:
-            await client.close()

@@ -120,7 +120,7 @@ class NostrClient:
         for attempt in range(max_attempts):
             _LOGGER.debug(
                 "Discovering relays for recipient %s (attempt %d/%d)",
-                recipient_pubkey_hex[:16],
+                recipient_pubkey_hex,
                 attempt + 1,
                 max_attempts,
             )
@@ -150,7 +150,7 @@ class NostrClient:
             except asyncio.TimeoutError:
                 _LOGGER.warning(
                     "Timed out querying kind 10050 for recipient %s (attempt %d/%d)",
-                    recipient_pubkey_hex[:16],
+                    recipient_pubkey_hex,
                     attempt + 1,
                     max_attempts,
                 )
